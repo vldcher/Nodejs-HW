@@ -21,7 +21,8 @@ function deviceAdapter(device) {
         name: device.name,
         address: device.address,
         port: device.port,
-        state: device.state ? 'on' : 'off'
+        state: device.state ? 'on' : 'off',
+        log: device.log
     }
 }
 
@@ -68,19 +69,56 @@ router.put('/:id', async (req, res) => {
    
         await device.update({
             ...deviceData,
-            state: deviceData.state === 'on'
+            state: device.state,
+            log: device.log
+        });
+
+        res.sendStatus(200);
+    } catch (e) {
+        res.sendStatus(404);
+    };
+
+});
+
+// logs
+router.get('/log/:id', async (req, res) => {
+    const deviceId = req.params.id;
+    const device = await Device.findById(deviceId, 'log').exec();
+
+    if (device) {
+        res.json(device.log);
+    } else {
+        res.sendStatus(404);
+    }
+});
+
+router.put('/log/:id', async(req, res) => {
+    const deviceId = req.params.id;
+    const deviceData = req.body;
+
+    try {
+        const device = await Device.findById(deviceId).exec();
+
+        await device.update({
+            state: deviceData.state === 'on' ? true : false,
+            $push: { "log": 
+                        { 
+                            "_id": deviceData.state.id,
+                            "date": new Date().toUTCString(), 
+                            "action": deviceData.state 
+                        }
+                    }
         });
 
         const url = `http://${device.address}:${device.port}`;
         const command = device.state ? 'Power off' : 'Power On';
 
-        await sendRequest(`${url}/cm?cmnd=${command}`);
-
+        await sendRequest(`${url}/cm?cmnd=${command}`)
         res.sendStatus(200);
-    } catch (e) {
+  
+    } catch(e) {
         res.sendStatus(404);
-    }
-
+    };
 });
 
 
