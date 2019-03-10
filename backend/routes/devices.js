@@ -103,7 +103,6 @@ router.put('/log/:id', async(req, res) => {
             state: deviceData.state === 'on' ? true : false,
             $push: { "log": 
                         { 
-                            "_id": deviceData.state.id,
                             "date": new Date().toUTCString(), 
                             "action": deviceData.state 
                         }
